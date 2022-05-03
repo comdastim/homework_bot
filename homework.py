@@ -23,7 +23,7 @@ logging.basicConfig(
     filename='main.log',
     filemode='a',
     format='%(asctime)s, %(levelname)s, %(message)s, %(name)s'
-    )
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -46,7 +46,7 @@ def send_message(bot, message):
     """Отправка сообщения в TELEGRAM."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
-        logger.info(f'Сообщение отправлено в Telegram')
+        logger.info('Сообщение отправлено в Telegram')
     except Exception as error:
         logger.error(f'Сбой при отправке сообщения в Telegram: {error}')
 
@@ -56,7 +56,7 @@ def get_api_answer(current_timestamp):
     current_timestamp = current_timestamp or int(time.time())
     params = {'from_date': current_timestamp}
     response = requests.get(ENDPOINT, headers=HEADERS, params=params)
-    if  response.status_code != 200:
+    if response.status_code != 200:
         message = f'ошибочный статус ответа API: {response.status_code}'
         logger.error(message, exc_info=True)
         raise ConnectionError(message)
@@ -73,7 +73,7 @@ def check_response(response):
         raise KeyError(message)
     homeworks = response['homeworks']
     if homeworks == []:
-        message= 'Список homework пуст'
+        message = 'Список homework пуст'
         raise ValueError(message)
     homework = response['homeworks'][0]
     if not isinstance(homework, dict):
@@ -83,10 +83,10 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """ Извлекаем из информации о конкретной домашней работе ее название и статус."""
+    """ Извлекаем название и статус домашней работы."""
     if 'homework_name' not in homework:
         message = 'Ключ homework_name отсутствует'
-        raise KeyError(message) 
+        raise KeyError(message)
     homework_name = homework['homework_name']
     homework_status = homework['status']
     if not isinstance(homework_name, str):
@@ -98,11 +98,9 @@ def parse_status(homework):
     if homework_status in HOMEWORK_STATUSES:
         verdict = HOMEWORK_STATUSES[homework_status]
     else:
-        message = f'Cтатус домашней работы, обнаруженный в ответе API, не предусмотрен: {homework_status}'
+        message = (f'Неизвестный статус домашней работы: {homework_status}')
         raise KeyError(message)
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
-    
-
 
 
 def check_tokens():
@@ -119,13 +117,13 @@ def main():
         message = 'Необходимые переменные окружения отсутствуют.'
         logger.critical(message, exc_info=True)
         sys.exit()
- 
+
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
-    
+
     try:
         response = get_api_answer(current_timestamp)
-        homework = check_response (response)
+        homework = check_response(response)
         message = parse_status(homework)
         send_message(bot, message)
         current_timestamp = current_timestamp
@@ -133,8 +131,8 @@ def main():
     except Exception as error:
         message = f'Сбой в работе программы: {error}'
         send_message(bot, message)
-        time.sleep(RETRY_TIME)  
+        time.sleep(RETRY_TIME)
+
+
 if __name__ == '__main__':
     main()
-
-    
